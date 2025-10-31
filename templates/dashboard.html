@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Eye-Blink Detection System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </h2>
+        <p class="page-subtitle">Welcome back, {{ username }}! Monitor your eye-blink detection system in real-time.</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- System Status Card -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="mb-2"><i class="bi bi-activity text-success"></i> System Status</p>
+                    <h3 id="system-status">{{ system_status }}</h3>
+                </div>
+                <i class="bi bi-check-circle icon text-success"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Blink Counter Card -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="mb-2"><i class="bi bi-eye text-primary"></i> Total Blinks</p>
+                    <h3 id="blink-counter">{{ blink_count }}</h3>
+                </div>
+                <i class="bi bi-eye-fill icon text-primary"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Session Time Card -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="mb-2"><i class="bi bi-clock text-info"></i> Session Time</p>
+                    <h3 id="session-time">00:00</h3>
+                </div>
+                <i class="bi bi-stopwatch icon text-info"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Real-time Monitoring -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-graph-up"></i> Real-time Monitoring
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <i class="bi bi-eye text-primary" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0" id="blink-rate">0</h4>
+                            <small class="text-muted">Blinks/min</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <i class="bi bi-lightning text-warning" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0" id="signal-strength">--</h4>
+                            <small class="text-muted">Signal Strength</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <i class="bi bi-reception-4 text-success" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0">
+                                <span class="badge bg-success">Online</span>
+                            </h4>
+                            <small class="text-muted">Connection</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3 border-0" style="background: #eff6ff;">
+                    <i class="bi bi-info-circle text-primary"></i> 
+                    <strong>Auto-updating:</strong> Blink counter updates automatically every 2 seconds with simulated data.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Morse Code Decoder - Sidebar -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-chat-dots text-primary"></i> Morse Code Decoder</span>
+                <button class="btn btn-sm btn-outline-primary" onclick="resetMorseCode()">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">
+                        <i class="bi bi-broadcast"></i> CURRENT PATTERN
+                    </label>
+                    <div class="p-3 bg-light rounded text-center" style="min-height: 70px; border: 2px dashed #e2e8f0;">
+                        <h4 class="mb-0 font-monospace" id="current-morse" style="letter-spacing: 5px; color: #4f46e5;">
+                            <span class="text-muted">---</span>
+                        </h4>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-muted">
+                        <i class="bi bi-type"></i> DECODED TEXT
+                    </label>
+                    <div class="p-3 rounded" style="min-height: 100px; background: #f0f9ff; border: 2px solid #bfdbfe;">
+                        <h3 class="mb-0" id="decoded-text" style="color: #1e40af; word-break: break-all;">
+                            {% if decoded_text %}{{ decoded_text }}{% else %}<span class="text-muted fs-6">---</span>{% endif %}
+                        </h3>
+                    </div>
+                </div>
+                
+                <div class="alert alert-light border mb-0" style="background: #fefce8; border-color: #fde047 !important;">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-lightbulb text-warning me-2 mt-1"></i>
+                        <div>
+                            <strong class="text-dark">How it works</strong>
+                            <p class="mb-0 small text-muted">Each blink generates a dot (•) or dash (—). After 5-7 blinks, the pattern is decoded into text.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let blinkCount = {{ blink_count }};
+    let sessionStartTime = Date.now();
+    let blinkHistory = [];
+    
+    // Update blink counter from server
+    function updateBlinkCounter() {
+        fetch('/api/blink-update')
+            .then(response => response.json())
+            .then(data => {
+                const newCount = data.blink_count;
+                if (newCount !== blinkCount) {
+                    blinkCount = newCount;
+                    document.getElementById('blink-counter').textContent = blinkCount;
+                    
+                    // Add animation
+                    const counter = document.getElementById('blink-counter');
+                    counter.style.transform = 'scale(1.2)';
+                    setTimeout(() => {
+                        counter.style.transform = 'scale(1)';
+                    }, 200);
+                    
+                    // Update blink history
+                    blinkHistory.push(Date.now());
+                    // Keep only last minute of data
+                    const oneMinuteAgo = Date.now() - 60000;
+                    blinkHistory = blinkHistory.filter(time => time > oneMinuteAgo);
+                }
+                
+                document.getElementById('system-status').textContent = data.system_status;
+                
+                // Calculate blink rate
+                const blinkRate = blinkHistory.length;
+                document.getElementById('blink-rate').textContent = blinkRate;
+                
+                // Update signal strength randomly
+                const signalStrength = Math.floor(Math.random() * 40) + 60;
+                document.getElementById('signal-strength').textContent = signalStrength + '%';
+                
+                // Update Morse code display
+                updateMorseDisplay(data);
+            })
+            .catch(error => console.error('Error updating blink counter:', error));
+    }
+    
+    // Update Morse code display
+    function updateMorseDisplay(data) {
+        const currentMorseEl = document.getElementById('current-morse');
+        const decodedTextEl = document.getElementById('decoded-text');
+        
+        // Update current Morse pattern
+        if (data.current_morse && data.current_morse.length > 0) {
+            // Replace dots and dashes with symbols
+            const displayPattern = data.current_morse.replace(/\./g, '•').replace(/-/g, '—');
+            currentMorseEl.innerHTML = displayPattern;
+            currentMorseEl.style.color = '#4f46e5';
+            
+            // Add blink animation when new pattern detected
+            if (data.blink_detected && data.morse_pattern) {
+                currentMorseEl.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    currentMorseEl.style.transform = 'scale(1)';
+                }, 200);
+            }
+        } else {
+            currentMorseEl.innerHTML = '<span class="text-muted">---</span>';
+        }
+        
+        // Update decoded text
+        if (data.decoded_text && data.decoded_text.length > 0) {
+            decodedTextEl.textContent = data.decoded_text;
+            decodedTextEl.style.color = '#1e40af';
+        } else {
+            decodedTextEl.innerHTML = '<span class="text-muted fs-6">---</span>';
+        }
+    }
+    
+    // Reset Morse code
+    function resetMorseCode() {
+        fetch('/api/reset-morse', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('current-morse').innerHTML = '<span class="text-muted">---</span>';
+            document.getElementById('decoded-text').innerHTML = '<span class="text-muted fs-6">---</span>';
+        })
+        .catch(error => console.error('Error resetting Morse code:', error));
+    }
+    
+    // Update session time
+    function updateSessionTime() {
+        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        document.getElementById('session-time').textContent = 
+            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    // Update every 2 seconds
+    setInterval(updateBlinkCounter, 2000);
+    setInterval(updateSessionTime, 1000);
+    
+    // Initial update
+    updateBlinkCounter();
+    updateSessionTime();
+</script>
+{% endblock %}

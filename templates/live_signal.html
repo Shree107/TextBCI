@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Live Signal - Eye-Blink Detection System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .blink-alert {
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        z-index: 1000;
+        min-width: 300px;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    .signal-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #198754;
+        animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.3;
+        }
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="bi bi-activity"></i> Live Signal Monitoring
+        </h2>
+        <p class="page-subtitle">
+            <span class="signal-indicator"></span> Real-time eye-blink signal visualization
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-9 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up"></i> Signal Waveform</span>
+                <span class="badge bg-success">
+                    <i class="bi bi-broadcast"></i> Live
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="signalChart"></canvas>
+                </div>
+                
+                <div class="row mt-4 text-center">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="mb-0" id="current-value">0</h5>
+                            <small class="text-muted">Current Value</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="mb-0" id="threshold-display">{{ threshold }}</h5>
+                            <small class="text-muted">Threshold</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="mb-0" id="blink-count-display">0</h5>
+                            <small class="text-muted">Blinks Detected</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-info-circle"></i> Information
+            </div>
+            <div class="card-body">
+                <h6><i class="bi bi-clock"></i> Update Rate</h6>
+                <p class="text-muted">~200ms (5 Hz)</p>
+                
+                <hr>
+                
+                <h6><i class="bi bi-graph-up"></i> Signal Range</h6>
+                <p class="text-muted">0 - 100</p>
+                
+                <hr>
+                
+                <h6><i class="bi bi-eye"></i> Detection</h6>
+                <p class="text-muted">Blink detected when signal shows random peaks above threshold</p>
+                
+                <hr>
+                
+                <div class="alert alert-warning p-2 small">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    <strong>Note:</strong> This is simulated data for demonstration purposes.
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-gear"></i> Quick Settings
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('settings') }}" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-sliders"></i> Adjust Threshold
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Blink Detection Alert Container -->
+<div id="alert-container"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const maxDataPoints = 50;
+    const updateInterval = 200; // milliseconds
+    let blinkCount = 0;
+    let threshold = {{ threshold }};
+    
+    // Initialize Chart.js
+    const ctx = document.getElementById('signalChart').getContext('2d');
+    const signalChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Signal',
+                data: [],
+                borderColor: 'rgb(102, 126, 234)',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 0
+            }, {
+                label: 'Threshold',
+                data: [],
+                borderColor: 'rgb(220, 53, 69)',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                fill: false,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 0
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Signal Strength'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time'
+                    },
+                    ticks: {
+                        maxTicksLimit: 10
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    enabled: true
+                }
+            }
+        }
+    });
+    
+    // Show blink detection alert
+    function showBlinkAlert() {
+        const alertContainer = document.getElementById('alert-container');
+        const alertId = 'alert-' + Date.now();
+        
+        const alertHTML = `
+            <div id="${alertId}" class="alert alert-success alert-dismissible fade show blink-alert" role="alert">
+                <h5 class="alert-heading">
+                    <i class="bi bi-eye-fill"></i> Blink Detected!
+                </h5>
+                <p class="mb-0">Signal peak detected at ${new Date().toLocaleTimeString()}</p>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            const alert = document.getElementById(alertId);
+            if (alert) {
+                alert.remove();
+            }
+        }, 3000);
+    }
+    
+    // Update chart with new data
+    function updateChart() {
+        fetch('/api/signal-data')
+            .then(response => response.json())
+            .then(data => {
+                const signalValue = data.signal_value;
+                const timestamp = data.timestamp;
+                const blinkDetected = data.blink_detected;
+                
+                // Update current value display
+                document.getElementById('current-value').textContent = signalValue;
+                
+                // Add new data point
+                signalChart.data.labels.push(timestamp);
+                signalChart.data.datasets[0].data.push(signalValue);
+                signalChart.data.datasets[1].data.push(threshold);
+                
+                // Remove old data points
+                if (signalChart.data.labels.length > maxDataPoints) {
+                    signalChart.data.labels.shift();
+                    signalChart.data.datasets[0].data.shift();
+                    signalChart.data.datasets[1].data.shift();
+                }
+                
+                // Update chart
+                signalChart.update();
+                
+                // Handle blink detection
+                if (blinkDetected) {
+                    blinkCount++;
+                    document.getElementById('blink-count-display').textContent = blinkCount;
+                    showBlinkAlert();
+                    
+                    // Flash the chart
+                    signalChart.data.datasets[0].borderColor = 'rgb(220, 53, 69)';
+                    setTimeout(() => {
+                        signalChart.data.datasets[0].borderColor = 'rgb(102, 126, 234)';
+                        signalChart.update();
+                    }, 300);
+                }
+            })
+            .catch(error => console.error('Error fetching signal data:', error));
+    }
+    
+    // Start updating
+    setInterval(updateChart, updateInterval);
+    
+    // Initial update
+    updateChart();
+</script>
+{% endblock %}

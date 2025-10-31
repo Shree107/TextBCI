@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - Eye-Blink Detection System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="bi bi-journal-text"></i> Blink Detection Logs
+        </h2>
+        <p class="page-subtitle">View all detected blink events during this session</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-3 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart"></i> Statistics
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h2 class="text-primary mb-0">{{ total_blinks }}</h2>
+                    <small class="text-muted">Total Blinks</small>
+                </div>
+                
+                <hr>
+                
+                <div class="text-center mb-3">
+                    <h4 class="mb-0">{{ logs|length }}</h4>
+                    <small class="text-muted">Log Entries</small>
+                </div>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> Session Data Only
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-funnel"></i> Filters
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label small">Search</label>
+                    <input type="text" class="form-control form-control-sm" 
+                           id="search-input" placeholder="Search logs...">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label small">Signal Strength</label>
+                    <select class="form-select form-select-sm" id="strength-filter">
+                        <option value="all">All</option>
+                        <option value="high">High (80-100)</option>
+                        <option value="medium">Medium (60-79)</option>
+                        <option value="low">Low (0-59)</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="clearFilters()">
+                    <i class="bi bi-x-circle"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-9 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table"></i> Blink Event Log</span>
+                <button class="btn btn-sm btn-outline-light" onclick="refreshLogs()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="logs-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">#</th>
+                                <th>Timestamp</th>
+                                <th>Signal Strength</th>
+                                <th style="width: 100px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr data-strength="{{ log.signal_strength }}">
+                                <td><strong>{{ log.id }}</strong></td>
+                                <td>
+                                    <i class="bi bi-clock"></i> {{ log.timestamp }}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar 
+                                            {% if log.signal_strength >= 80 %}bg-success
+                                            {% elif log.signal_strength >= 60 %}bg-warning
+                                            {% else %}bg-danger{% endif %}" 
+                                            role="progressbar" 
+                                            style="width: {{ log.signal_strength }}%;">
+                                            {{ log.signal_strength }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Detected
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        Showing <span id="visible-count">{{ logs|length }}</span> of {{ logs|length }} entries
+                    </small>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> Data resets on server restart
+                    </small>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                    <h5 class="mt-3 text-muted">No Blinks Detected Yet</h5>
+                    <p class="text-muted">Blink detection logs will appear here once the system detects eye blinks.</p>
+                    <a href="{{ url_for('live_signal') }}" class="btn btn-primary mt-2">
+                        <i class="bi bi-activity"></i> Go to Live Signal
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if logs %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-download"></i> Export Options
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Export your blink detection logs for further analysis
+                </p>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportToCSV()" disabled>
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export as CSV
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="exportToJSON()" disabled>
+                        <i class="bi bi-file-earmark-code"></i> Export as JSON
+                    </button>
+                    <small class="text-muted align-self-center ms-2">
+                        <i class="bi bi-lock"></i> Available in full version
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function refreshLogs() {
+        location.reload();
+    }
+    
+    function clearFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('strength-filter').value = 'all';
+        filterLogs();
+    }
+    
+    function filterLogs() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const strengthFilter = document.getElementById('strength-filter').value;
+        const rows = document.querySelectorAll('#logs-table tbody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const strength = parseInt(row.dataset.strength);
+            
+            let matchesSearch = text.includes(searchTerm);
+            let matchesStrength = true;
+            
+            if (strengthFilter === 'high') {
+                matchesStrength = strength >= 80;
+            } else if (strengthFilter === 'medium') {
+                matchesStrength = strength >= 60 && strength < 80;
+            } else if (strengthFilter === 'low') {
+                matchesStrength = strength < 60;
+            }
+            
+            if (matchesSearch && matchesStrength) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('visible-count').textContent = visibleCount;
+    }
+    
+    function exportToCSV() {
+        alert('CSV export feature available in full version');
+    }
+    
+    function exportToJSON() {
+        alert('JSON export feature available in full version');
+    }
+    
+    // Add event listeners
+    document.getElementById('search-input')?.addEventListener('input', filterLogs);
+    document.getElementById('strength-filter')?.addEventListener('change', filterLogs);
+</script>
+{% endblock %}

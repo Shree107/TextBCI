@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Eye-Blink Detection System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="bi bi-gear"></i> Settings
+        </h2>
+        <p class="page-subtitle">Configure your eye-blink detection system parameters</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-sliders"></i> Detection Parameters
+            </div>
+            <div class="card-body">
+                {% if success %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> 
+                    <strong>Success!</strong> Settings have been saved successfully.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('settings') }}">
+                    <div class="mb-4">
+                        <label for="threshold" class="form-label">
+                            <i class="bi bi-speedometer"></i> Detection Threshold
+                        </label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input type="range" class="form-range flex-grow-1" 
+                                   id="threshold" name="threshold" 
+                                   min="0" max="100" value="{{ threshold }}"
+                                   oninput="updateThresholdValue(this.value)">
+                            <span class="badge bg-primary" style="font-size: 1.2rem; min-width: 60px;" id="threshold-value">
+                                {{ threshold }}
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            Adjust the sensitivity threshold for blink detection (0-100). 
+                            Higher values require stronger signals to detect blinks.
+                        </small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading"><i class="bi bi-lightbulb"></i> Threshold Guide</h6>
+                        <ul class="mb-0">
+                            <li><strong>0-30:</strong> Very sensitive - May detect false positives</li>
+                            <li><strong>31-60:</strong> Moderate sensitivity - Recommended for most users</li>
+                            <li><strong>61-100:</strong> Low sensitivity - Only strong signals detected</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Settings
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary" onclick="resetThreshold()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="bi bi-palette"></i> Display Settings
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-graph-up"></i> Chart Update Rate
+                    </label>
+                    <select class="form-select" disabled>
+                        <option selected>200ms (Default)</option>
+                        <option>100ms (Fast)</option>
+                        <option>500ms (Slow)</option>
+                    </select>
+                    <small class="text-muted">
+                        <i class="bi bi-lock"></i> This setting is currently locked in demo mode
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-clock-history"></i> Data Retention
+                    </label>
+                    <select class="form-select" disabled>
+                        <option selected>Session Only (Default)</option>
+                        <option>24 Hours</option>
+                        <option>7 Days</option>
+                    </select>
+                    <small class="text-muted">
+                        <i class="bi bi-lock"></i> This setting is currently locked in demo mode
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-info-circle"></i> Current Configuration
+            </div>
+            <div class="card-body">
+                <h6>Detection Threshold</h6>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div class="progress-bar" role="progressbar" 
+                         id="threshold-progress" 
+                         style="width: {{ threshold }}%;">
+                        {{ threshold }}%
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6>System Information</h6>
+                <table class="table table-sm">
+                    <tr>
+                        <td><i class="bi bi-cpu"></i> Mode</td>
+                        <td><span class="badge bg-info">Simulation</span></td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-activity"></i> Status</td>
+                        <td><span class="badge bg-success">Active</span></td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-clock"></i> Uptime</td>
+                        <td id="uptime">00:00:00</td>
+                    </tr>
+                </table>
+                
+                <hr>
+                
+                <div class="alert alert-warning p-2 small">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    <strong>Demo Mode:</strong> Some settings are disabled in simulation mode.
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-question-circle"></i> Help
+            </div>
+            <div class="card-body">
+                <p class="small mb-2">
+                    <strong>Need assistance?</strong>
+                </p>
+                <p class="small text-muted">
+                    The threshold setting controls how sensitive the system is to detecting blinks. 
+                    Adjust it based on your signal quality and detection requirements.
+                </p>
+                <a href="{{ url_for('live_signal') }}" class="btn btn-sm btn-outline-primary w-100">
+                    <i class="bi bi-activity"></i> Test Live Signal
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const initialThreshold = {{ threshold }};
+    let startTime = Date.now();
+    
+    function updateThresholdValue(value) {
+        document.getElementById('threshold-value').textContent = value;
+        document.getElementById('threshold-progress').style.width = value + '%';
+        document.getElementById('threshold-progress').textContent = value + '%';
+    }
+    
+    function resetThreshold() {
+        document.getElementById('threshold').value = initialThreshold;
+        updateThresholdValue(initialThreshold);
+    }
+    
+    function updateUptime() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        
+        document.getElementById('uptime').textContent = 
+            `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    setInterval(updateUptime, 1000);
+    updateUptime();
+</script>
+{% endblock %}
